@@ -19,7 +19,7 @@ export default function TicketDetail() {
 
   const fetchTicket = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${id}`, {
+     const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tickets/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -46,7 +46,7 @@ export default function TicketDetail() {
     setError('');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${id}/comments`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tickets/${id}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ export default function TicketDetail() {
                 <div className="flex items-center space-x-2">
                   <Download className="h-4 w-4 text-gray-500" />
                   <a
-                    href={`http://localhost:5000${ticket.attachment.path}`}
+                    href={`${import.meta.env.VITE_BACKEND_URL}${ticket.attachment.path}`}
                     download={ticket.attachment.originalname}
                     className="text-blue-600 hover:text-blue-800 text-sm"
                   >

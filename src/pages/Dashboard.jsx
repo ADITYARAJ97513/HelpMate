@@ -20,7 +20,7 @@ export default function Dashboard() {
       if (filter.category) queryParams.append('category', filter.category);
       if (filter.priority) queryParams.append('priority', filter.priority);
 
-      const response = await fetch(`http://localhost:5000/api/tickets?${queryParams}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tickets?${queryParams}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 

@@ -28,7 +28,7 @@ export default function AdminDashboard() {
       if (filter.category) queryParams.append('category', filter.category);
       if (filter.priority) queryParams.append('priority', filter.priority);
 
-      const ticketsResponse = await fetch(`http://localhost:5000/api/tickets?${queryParams}`, {
+      const ticketsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tickets?${queryParams}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -37,7 +37,7 @@ export default function AdminDashboard() {
         setTickets(ticketsData);
       }
 
-      const statsResponse = await fetch('http://localhost:5000/api/stats', {
+      const statsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
 
   const updateTicketStatus = async (ticketId, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/tickets/${ticketId}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

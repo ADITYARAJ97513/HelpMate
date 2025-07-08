@@ -20,7 +20,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 
 const db = new Database();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://help-mate-six.vercel.app',
+  credentials: true
+}));
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

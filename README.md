@@ -42,9 +42,6 @@ HelpMate is a full-stack customer support ticketing system built for businesses 
 
 ---
 
-## ⚙️ Local Setup Instructions
-
-### 1. Clone the Repository
 
 🌐 Live Demo
 Frontend: https://help-mate-six.vercel.app

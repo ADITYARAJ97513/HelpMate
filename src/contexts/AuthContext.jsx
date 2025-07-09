@@ -15,19 +15,29 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
+  // ✅ Decode token safely
+  const decodeToken = (token) => {
+    try {
+      const base64Payload = token.split('.')[1];
+      const decodedPayload = JSON.parse(atob(base64Payload));
+      return {
+        id: decodedPayload.userId,
+        email: decodedPayload.email,
+        role: decodedPayload.role,
+      };
+    } catch (err) {
+      console.error('Invalid token payload:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        // Set user from token payload
-        setUser({
-          id: payload.userId,
-          email: payload.email,
-          role: payload.role
-        });
-      } catch (error) {
-        console.error('Invalid token:', error);
-        logout();
+      const decodedUser = decodeToken(token);
+      if (decodedUser) {
+        setUser(decodedUser);
+      } else {
+        logout(); // invalid token
       }
     }
     setLoading(false);
@@ -41,7 +51,7 @@ export function AuthProvider({ children }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -51,8 +61,8 @@ export function AuthProvider({ children }) {
 
       const data = await response.json();
       setToken(data.token);
-      setUser(data.user);
       localStorage.setItem('token', data.token);
+      setUser(decodeToken(data.token));
     } catch (error) {
       throw error;
     }
@@ -66,7 +76,7 @@ export function AuthProvider({ children }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name, email, password }),
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -76,8 +86,8 @@ export function AuthProvider({ children }) {
 
       const data = await response.json();
       setToken(data.token);
-      setUser(data.user);
       localStorage.setItem('token', data.token);
+      setUser(decodeToken(data.token));
     } catch (error) {
       throw error;
     }
@@ -98,9 +108,5 @@ export function AuthProvider({ children }) {
     loading,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

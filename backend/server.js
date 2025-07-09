@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
@@ -20,19 +19,28 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 
 const db = new Database();
 
-app.use(cors({
+// ✅ CORS Setup for Vercel Frontend
+const corsOptions = {
   origin: 'https://help-mate-six.vercel.app',
-  credentials: true
-}));
+  credentials: true,
+};
 
+app.use(cors(corsOptions));
+
+// ✅ Allow preflight OPTIONS requests
+app.options('*', cors(corsOptions));
+
+// Parse JSON
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Uploads folder
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, 'uploads'));
@@ -123,7 +131,7 @@ app.post('/api/tickets', authMiddleware, upload.single('attachment'), async (req
       };
     }
 
-    const ticket = await db.createTicket(ticketData); // ✅ await added
+    const ticket = await db.createTicket(ticketData);
     res.status(201).json({ message: 'Ticket created successfully', ticket });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -136,17 +144,16 @@ app.get('/api/tickets', authMiddleware, async (req, res) => {
     let tickets;
 
     if (req.user.role === 'admin') {
-      tickets = await db.getAllTickets(); // ✅ await added
+      tickets = await db.getAllTickets();
     } else {
-      tickets = await db.getTicketsByUser(req.user.userId); // ✅ await added
+      tickets = await db.getTicketsByUser(req.user.userId);
     }
 
-    // Filtering
     if (status) tickets = tickets.filter(t => t.status === status);
     if (category) tickets = tickets.filter(t => t.category === category);
     if (priority) tickets = tickets.filter(t => t.priority === priority);
 
-    res.json(tickets); // ✅ not wrapped inside { tickets }
+    res.json(tickets);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -207,7 +214,7 @@ app.post('/api/tickets/:id/comments', authMiddleware, async (req, res) => {
 app.get('/api/stats', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ message: 'Access denied' });
-    const stats = await db.getStats(); // ✅ await added
+    const stats = await db.getStats();
     res.json(stats);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

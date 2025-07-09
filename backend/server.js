@@ -6,47 +6,40 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-
 import { Database } from './database.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
-
 const db = new Database();
 
-// ✅ CORS Setup for Vercel Frontend
+// ✅ CORS - MUST be top middleware and handle preflight OPTIONS
 const corsOptions = {
-  origin: 'https://help-mate-six.vercel.app',
+  origin: 'https://help-mate-six.vercel.app', // Your Vercel frontend
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handles preflight
 
-// ✅ Allow preflight OPTIONS requests
-app.options('*', cors(corsOptions));
-
-// Parse JSON
+// ✅ Express Middleware
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Uploads folder
+// ✅ Ensure upload folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// Multer setup
+// ✅ Multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, 'uploads'));
-  },
+  destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
@@ -141,13 +134,9 @@ app.post('/api/tickets', authMiddleware, upload.single('attachment'), async (req
 app.get('/api/tickets', authMiddleware, async (req, res) => {
   try {
     const { status, category, priority } = req.query;
-    let tickets;
-
-    if (req.user.role === 'admin') {
-      tickets = await db.getAllTickets();
-    } else {
-      tickets = await db.getTicketsByUser(req.user.userId);
-    }
+    let tickets = req.user.role === 'admin'
+      ? await db.getAllTickets()
+      : await db.getTicketsByUser(req.user.userId);
 
     if (status) tickets = tickets.filter(t => t.status === status);
     if (category) tickets = tickets.filter(t => t.category === category);
@@ -164,9 +153,8 @@ app.get('/api/tickets/:id', authMiddleware, async (req, res) => {
     const ticket = await db.getTicketById(req.params.id);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
-    if (req.user.role !== 'admin' && ticket.userId !== req.user.userId) {
+    if (req.user.role !== 'admin' && ticket.userId !== req.user.userId)
       return res.status(403).json({ message: 'Access denied' });
-    }
 
     const comments = await db.getCommentsByTicket(req.params.id);
     res.json({ ...ticket, comments });
@@ -199,9 +187,8 @@ app.post('/api/tickets/:id/comments', authMiddleware, async (req, res) => {
     const ticket = await db.getTicketById(ticketId);
     if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
-    if (req.user.role !== 'admin' && ticket.userId !== userId) {
+    if (req.user.role !== 'admin' && ticket.userId !== userId)
       return res.status(403).json({ message: 'Access denied' });
-    }
 
     const comment = await db.createComment({ ticketId, userId, content });
     res.status(201).json({ message: 'Comment added successfully', comment });
@@ -221,7 +208,7 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
   }
 });
 
-// ---------------- START ----------------
+// ---------------- START SERVER ----------------
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

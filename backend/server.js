@@ -208,6 +208,11 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Health check route to keep server awake
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // ---------------- START SERVER ----------------
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

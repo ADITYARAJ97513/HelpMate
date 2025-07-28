@@ -76,7 +76,7 @@ export class Database {
           userId TEXT NOT NULL,
           content TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (ticketId) REFERENCES tickets (id),
+          FOREIGN KEY (ticketId) REFERENCES tickets (id) ON DELETE CASCADE,
           FOREIGN KEY (userId) REFERENCES users (id)
         )
       `);
@@ -96,14 +96,14 @@ export class Database {
         id: uuidv4(),
         name: 'Admin User',
         email: 'admin@example.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
         role: 'admin'
       },
       {
         id: uuidv4(),
         name: 'John Doe',
         email: 'john@example.com',
-        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
         role: 'user'
       }
     ];
@@ -170,9 +170,10 @@ export class Database {
       FROM tickets t JOIN users u ON t.userId = u.id
       WHERE t.id = ?
     `, [id]);
+    if (!row) return null;
     return {
       ...row,
-      attachment: row?.attachment ? JSON.parse(row.attachment) : null
+      attachment: row.attachment ? JSON.parse(row.attachment) : null
     };
   }
 
@@ -219,5 +220,14 @@ export class Database {
     stats.totalUsers = (await getAsync(this.db, "SELECT COUNT(*) as count FROM users WHERE role = 'user'")).count;
 
     return stats;
+  }
+
+
+  async deleteTicket(ticketId) {
+    return runAsync(this.db, "DELETE FROM tickets WHERE id = ?", [ticketId]);
+  }
+
+  async deleteCommentsByTicket(ticketId) {
+    return runAsync(this.db, "DELETE FROM comments WHERE ticketId = ?", [ticketId]);
   }
 }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Bot, User, Send, ArrowLeft, CheckCircle } from 'lucide-react';
 
@@ -9,7 +9,7 @@ export default function Chatbot() {
   const [messages, setMessages] = useState([
     {
       id: '1',
-      content: "Hello! I'm here to help you create a support ticket. Let's start by understanding your issue. What type of problem are you experiencing?",
+      content: "Hello! I'm the Webtirety support bot. I can help you create a support ticket. To start, please select the category that best describes your issue.",
       sender: 'bot',
       timestamp: new Date()
     }
@@ -23,6 +23,15 @@ export default function Chatbot() {
   });
   const [inputValue, setInputValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const addMessage = (content, sender) => {
     const newMessage = {
@@ -36,20 +45,20 @@ export default function Chatbot() {
 
   const handleCategorySelection = (category) => {
     addMessage(category, 'user');
-    setTicketData(prev => ({ ...prev, category }));
+    setTicketData(prev => ({ ...prev, category: category.split(' ')[0].toLowerCase() }));
     
     setTimeout(() => {
-      addMessage("Thanks! Now, how urgent is this issue?", 'bot');
+      addMessage("Thank you. Now, please select the urgency of this issue.", 'bot');
       setCurrentStep('priority');
     }, 500);
   };
 
   const handlePrioritySelection = (priority) => {
     addMessage(priority, 'user');
-    setTicketData(prev => ({ ...prev, priority }));
+    setTicketData(prev => ({ ...prev, priority: priority.split(' ')[0].toLowerCase() }));
     
     setTimeout(() => {
-      addMessage("Great! Please provide a brief title for your issue:", 'bot');
+      addMessage("Got it. Please provide a short, clear title for your ticket.", 'bot');
       setCurrentStep('title');
     }, 500);
   };
@@ -62,7 +71,7 @@ export default function Chatbot() {
     setInputValue('');
     
     setTimeout(() => {
-      addMessage("Perfect! Now please describe your issue in detail. Include any relevant information that might help us resolve it:", 'bot');
+      addMessage("Perfect. Lastly, please describe the issue in detail. The more information you provide, the faster we can help!", 'bot');
       setCurrentStep('description');
     }, 500);
   };
@@ -75,13 +84,13 @@ export default function Chatbot() {
     setInputValue('');
     
     setTimeout(() => {
-      addMessage("Excellent! I have all the information I need. Let me create your support ticket now.", 'bot');
+      addMessage("Excellent! I have all the necessary information. I will now create your support ticket.", 'bot');
       setCurrentStep('submit');
-      submitTicket();
+      submitTicket({ ...ticketData, description: inputValue });
     }, 500);
   };
 
-  const submitTicket = async () => {
+  const submitTicket = async (finalTicketData) => {
     setIsSubmitting(true);
     
     try {
@@ -91,23 +100,24 @@ export default function Chatbot() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(ticketData),
+        body: JSON.stringify(finalTicketData),
       });
 
       if (response.ok) {
         setTimeout(() => {
-          addMessage("✅ Your ticket has been created successfully! You can view it in your dashboard. Our support team will respond soon.", 'bot');
+          addMessage("✅ Your ticket has been created successfully! You'll be redirected to your dashboard shortly.", 'bot');
           setCurrentStep('completed');
+          setTimeout(() => navigate('/dashboard'), 3000);
         }, 1000);
       } else {
         setTimeout(() => {
-          addMessage("❌ Sorry, there was an error creating your ticket. Please try again or create a ticket manually.", 'bot');
+          addMessage("❌ We're sorry, but there was an error creating your ticket. Please try creating a ticket manually from your dashboard.", 'bot');
           setCurrentStep('error');
         }, 1000);
       }
     } catch (error) {
       setTimeout(() => {
-        addMessage("❌ Network error. Please check your connection and try again.", 'bot');
+        addMessage("❌ A network error occurred. Please check your internet connection and try again.", 'bot');
         setCurrentStep('error');
       }, 1000);
     } finally {
@@ -116,58 +126,39 @@ export default function Chatbot() {
   };
 
   const renderStepContent = () => {
+    const buttonBaseStyle = "px-4 py-2 rounded-lg font-semibold border-2 transition-transform transform hover:scale-105";
+    const categoryButtons = [
+      { label: 'Technical Issue', style: 'border-blue-500 text-blue-600 hover:bg-blue-50' },
+      { label: 'Account Support', style: 'border-green-500 text-green-600 hover:bg-green-50' },
+      { label: 'Billing Question', style: 'border-yellow-500 text-yellow-600 hover:bg-yellow-50' },
+      { label: 'Feature Request', style: 'border-purple-500 text-purple-600 hover:bg-purple-50' },
+    ];
+    const priorityButtons = [
+        { label: 'Low Priority', style: 'border-green-500 text-green-600 hover:bg-green-50' },
+        { label: 'Medium Priority', style: 'border-yellow-500 text-yellow-600 hover:bg-yellow-50' },
+        { label: 'High Priority', style: 'border-red-500 text-red-600 hover:bg-red-50' },
+    ];
+
     switch (currentStep) {
       case 'category':
         return (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handleCategorySelection('Technical Issue')}
-              className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors"
-            >
-              Technical Issue
-            </button>
-            <button
-              onClick={() => handleCategorySelection('Account Support')}
-              className="px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
-            >
-              Account Support
-            </button>
-            <button
-              onClick={() => handleCategorySelection('Billing Question')}
-              className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
-            >
-              Billing Question
-            </button>
-            <button
-              onClick={() => handleCategorySelection('Feature Request')}
-              className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg hover:bg-purple-200 transition-colors"
-            >
-              Feature Request
-            </button>
+          <div className="flex flex-wrap gap-3">
+            {categoryButtons.map(btn => (
+              <button key={btn.label} onClick={() => handleCategorySelection(btn.label)} className={`${buttonBaseStyle} ${btn.style}`}>
+                {btn.label}
+              </button>
+            ))}
           </div>
         );
         
       case 'priority':
         return (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handlePrioritySelection('Low Priority')}
-              className="px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
-            >
-              Low Priority - General question
-            </button>
-            <button
-              onClick={() => handlePrioritySelection('Medium Priority')}
-              className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
-            >
-              Medium Priority - Standard issue
-            </button>
-            <button
-              onClick={() => handlePrioritySelection('High Priority')}
-              className="px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors"
-            >
-              High Priority - Urgent issue
-            </button>
+          <div className="flex flex-wrap gap-3">
+            {priorityButtons.map(btn => (
+              <button key={btn.label} onClick={() => handlePrioritySelection(btn.label)} className={`${buttonBaseStyle} ${btn.style}`}>
+                {btn.label}
+              </button>
+            ))}
           </div>
         );
         
@@ -180,43 +171,42 @@ export default function Chatbot() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleTitleSubmit()}
               placeholder="Enter a brief title..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#13A24B]"
             />
             <button
               onClick={handleTitleSubmit}
               disabled={!inputValue.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-[#F47121] text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             </button>
           </div>
         );
         
       case 'description':
         return (
-          <div className="space-y-2">
+          <div className="flex items-start space-x-2">
             <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Describe your issue in detail..."
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#13A24B]"
             />
             <button
               onClick={handleDescriptionSubmit}
               disabled={!inputValue.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-full px-4 py-2 bg-[#F47121] text-white rounded-md hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Send className="h-4 w-4 mr-2" />
-              Submit Description
+              <Send className="h-5 w-5" />
             </button>
           </div>
         );
         
       case 'submit':
         return (
-          <div className="flex items-center space-x-2 text-blue-600">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <div className="flex items-center space-x-2 text-[#13A24B] font-semibold">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#13A24B]"></div>
             <span>Creating your ticket...</span>
           </div>
         );
@@ -224,44 +214,22 @@ export default function Chatbot() {
       case 'completed':
         return (
           <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-2 text-green-600">
+            <div className="flex items-center space-x-2 text-green-600 font-semibold">
               <CheckCircle className="h-5 w-5" />
-              <span>Ticket created successfully!</span>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                View Dashboard
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Create Another Ticket
-              </button>
+              <span>Ticket created successfully! Redirecting...</span>
             </div>
           </div>
         );
         
       case 'error':
         return (
-          <div className="flex flex-col space-y-4">
-            <div className="flex space-x-2">
-              <button
-                onClick={() => navigate('/create-ticket')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Create Ticket Manually
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
+          <div className="flex space-x-3">
+            <button onClick={() => navigate('/create-ticket')} className="px-4 py-2 bg-[#F47121] text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold">
+              Create Manually
+            </button>
+            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-semibold">
+              Try Again
+            </button>
           </div>
         );
         
@@ -271,51 +239,59 @@ export default function Chatbot() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back to Dashboard</span>
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Chat Support</h1>
-        <p className="mt-2 text-gray-600">Let our chatbot guide you through creating a support ticket</p>
-      </div>
-
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <div className="h-96 overflow-y-auto mb-6 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+    <div className="min-h-screen bg-[#E9F7F5] p-4 sm:p-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-6 text-center">
+            <img 
+              src="/webtirety-logo.png" 
+              alt="Webtirety Software Logo" 
+              className="mx-auto h-16 w-auto mb-4"
+            />
+            <h1 className="text-4xl font-bold text-[#13A24B]">Chat Support</h1>
+            <p className="mt-1 text-gray-500">Let our chatbot guide you through creating a support ticket.</p>
+             <button
+                onClick={() => navigate('/dashboard')}
+                className="mt-4 inline-flex items-center space-x-2 text-gray-600 hover:text-[#F47121] font-semibold"
             >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.sender === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                <div className="flex items-center space-x-2 mb-1">
-                  {message.sender === 'bot' ? (
-                    <Bot className="h-4 w-4" />
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
-                  <span className="text-xs opacity-75">
-                    {message.sender === 'bot' ? 'Support Bot' : 'You'}
-                  </span>
-                </div>
-                <p className="text-sm">{message.content}</p>
-              </div>
-            </div>
-          ))}
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+            </button>
         </div>
 
-        <div className="border-t border-gray-200 pt-4">
-          {renderStepContent()}
+        <div className="bg-white shadow-lg rounded-xl">
+          <div className="h-[60vh] overflow-y-auto p-6 space-y-6">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex items-end gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {message.sender === 'bot' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#13A24B] flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-white" />
+                    </div>
+                )}
+                <div
+                  className={`max-w-sm md:max-w-md px-4 py-3 rounded-2xl ${
+                    message.sender === 'user'
+                      ? 'bg-[#F47121] text-white rounded-br-none'
+                      : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                  }`}
+                >
+                  <p className="text-sm">{message.content}</p>
+                </div>
+                 {message.sender === 'user' && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                        <User className="h-5 w-5 text-gray-600" />
+                    </div>
+                )}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="border-t border-gray-200 p-4">
+            {renderStepContent()}
+          </div>
         </div>
       </div>
     </div>

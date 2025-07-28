@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { Database } from './database.js';
-import { authMiddleware } from './middleware/auth.js';
+import { authMiddleware, adminMiddleware } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,27 +15,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-here';
 const db = new Database();
-
-// ✅ CORS - MUST be top middleware and handle preflight OPTIONS
 const corsOptions = {
-  origin: 'https://help-mate-six.vercel.app', // Your Vercel frontend
+  origin: [
+    'https://help-mate-six.vercel.app', // Production URL
+    'http://localhost:5173'             // Development URL
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handles preflight
-
-// ✅ Express Middleware
+app.options('*', cors(corsOptions)); 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ✅ Ensure upload folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// ✅ Multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
@@ -177,7 +173,42 @@ app.put('/api/tickets/:id', authMiddleware, async (req, res) => {
   }
 });
 
+
+app.delete('/api/tickets/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const ticketId = req.params.id;
+
+    const ticket = await db.getTicketById(ticketId);
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+    if (ticket.attachment && ticket.attachment.filename) {
+      
+      const filePath = path.join(__dirname, 'uploads', ticket.attachment.filename);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlink(filePath, (err) => {
+          if (err) console.error("Error deleting attachment file:", err);
+        });
+      }
+    }
+
+   
+    await db.deleteCommentsByTicket(ticketId);
+
+    
+    await db.deleteTicket(ticketId);
+
+    res.status(200).json({ message: 'Ticket deleted successfully' });
+  } catch (error) {
+    console.error('Server Error on ticket delete:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+
 // ---------------- COMMENTS ----------------
+
 app.post('/api/tickets/:id/comments', authMiddleware, async (req, res) => {
   try {
     const { content } = req.body;
@@ -208,7 +239,7 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ Health check route to keep server awake
+// ---------------- HEALTH CHECK ----------------
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', time: new Date().toISOString() });
 });

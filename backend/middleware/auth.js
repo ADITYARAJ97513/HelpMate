@@ -11,10 +11,20 @@ export const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    req.user = decoded; 
     next();
   } catch (error) {
     console.error("JWT verification error:", error.message);
     res.status(401).json({ error: 'Invalid or expired token.' });
+  }
+};
+
+
+export const adminMiddleware = (req, res, next) => {
+  
+  if (req.user && req.user.role === 'admin') {
+    next(); 
+  } else {
+    res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   }
 };

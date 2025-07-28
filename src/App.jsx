@@ -64,7 +64,7 @@ function App() {
             />
           </Routes>
 
-          {/* ✅ Show chatbot icon after all routes */}
+       
           <FloatingChatbotButton />
         </div>
       </Router>

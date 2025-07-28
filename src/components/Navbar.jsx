@@ -8,7 +8,7 @@ import {
   MessageCircle,
   UserCog,
 } from "lucide-react";
-
+import logo from "/public/webtirety-logo.png";
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ export default function Navbar() {
             >
               <img
                 className="h-12 w-auto"
-                src="/public/webtirety-logo.png"
+                src={logo}
                 alt="Webtirety Software Logo"
               />
 

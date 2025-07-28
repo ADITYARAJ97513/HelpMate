@@ -2,10 +2,12 @@
 
 HelpMate is a full-stack customer support ticketing system built for businesses to manage user issues seamlessly. It allows users to register/login, raise tickets with attachments, track ticket status, and even chat with a support bot. Admins can manage all tickets, view user stats, and respond efficiently.
 
-![HelpMate UI Preview]( ![Screenshot 2025-07-09 095512](https://github.com/user-attachments/assets/e8d9ada3-391e-4c89-8f0a-a26d80390b9c) )
+![HelpMate UI Preview]
 
 
----
+---<img width="1348" height="629" alt="Screenshot 2025-07-28 135038" src="https://github.com/user-attachments/assets/875ccec0-dc96-46a0-94fb-b775305bba3c" />
+<img width="1336" height="620" alt="Screenshot 2025-07-28 135207" src="https://github.com/user-attachments/assets/8988f6dc-4991-4fcc-bc23-59712aae970d" />
+<img width="1345" height="636" alt="Screenshot 2025-07-28 135118" src="https://github.com/user-attachments/assets/afdc6ae6-58c0-44e0-ba71-dd64c313b919" />
 
 ## 🚀 Tech Stack
 
